@@ -1,7 +1,7 @@
 const cluster = require('cluster')
 const path = require('path')
 const os = require('os')
-const { readdir } =  require('fs/promises')
+const { readdir } = require('fs/promises')
 const fs = require('fs')
 const csv = require('csv-parser')
 
@@ -29,6 +29,12 @@ async function csvToJson(directoryPath) {
       const worker = cluster.fork();
       worker.send(csvFilePath);
       num++;
+
+      worker.on('message', ({count, duration}) => {
+        const pathChunk = csvFilePath.split('\\');
+        const fileName = pathChunk[1].replace('.csv', '.json');
+        console.log(`It took ${duration} milliseconds to read ${count} lines in ${fileName} file`);
+      })
     }
   } else {
     process.on('message', (message) => {
@@ -50,11 +56,12 @@ async function csvToJson(directoryPath) {
         .on('end', () => {
           const endTime = new Date();
           const duration = endTime - startTime;
-          console.log(`It took ${duration} milliseconds to read ${count} lines of the  ${fileName} file`);
-          fs.writeFile(`./converted/${fileName}`, JSON.stringify(results, undefined, 2), 'utf-8', (data) => {});
+          fs.writeFile(`./converted/${fileName}`, JSON.stringify(results, undefined, 2), 'utf-8', (data) => { });
+          process.send({ count, duration });
+          process.disconnect();
         });
     });
   }
-  }
-  
-csvToJson(process.argv[2])
+}
+
+csvToJson(process.argv[2]);
