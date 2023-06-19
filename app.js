@@ -58,7 +58,7 @@ async function csvToJson(directoryPath) {
           const duration = endTime - startTime;
           fs.writeFile(`./converted/${fileName}`, JSON.stringify(results, undefined, 2), 'utf-8', (data) => { });
           process.send({ count, duration });
-          process.disconnect();
+
         });
     });
   }
